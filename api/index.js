@@ -20,10 +20,14 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection (handled within each request due to Vercel's stateless functions)
-mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
 
+mongoose.connect(process.env.DB_URL)
+
+const db = mongoose.connection
+
+db.on("open", () => {
+  console.log("Connected to MongoDB")
+})
 // Pusher setup
 const pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
