@@ -1,7 +1,9 @@
+// /api/index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
+const Pusher = require("pusher");
 
 const users_router = require("../routes/users");
 const todo_router = require("../routes/todos");
@@ -13,20 +15,16 @@ const chat_router = require("../routes/chat");
 
 const app = express();
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection with error handling
+// MongoDB connection (handled within each request due to Vercel's stateless functions)
 mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
-    console.log("Connected to MongoDB");
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err);
-  });
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Pusher setup
-const Pusher = require("pusher");
 const pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_KEY,
@@ -37,7 +35,7 @@ const pusher = new Pusher({
 
 // Default route
 app.get("/", (req, res) => {
-  res.json({ message: "it home bro" });
+  res.json({ message: "Welcome to the app!" });
 });
 
 // REST API routes
@@ -53,9 +51,10 @@ app.use("/chat", chat_router);
 app.post("/send-message", (req, res) => {
   const { message, roomName, username, createdAt, uid, userProfileImage, name } = req.body;
 
-  console.log("Message to send:", req.body);
+  console.log("Received message data:", req.body);
 
   try {
+    // Trigger the message event to Pusher
     pusher.trigger("chat-channel", "new-message", {
       message,
       roomName,
@@ -68,10 +67,9 @@ app.post("/send-message", (req, res) => {
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error triggering Pusher:", error);
-    res.status(500).json({ success: false, message: "Error sending message" });
+    res.status(500).json({ success: false, message: "Error sending message to Pusher" });
   }
 });
 
-// Export the Express app wrapped in serverless-http
-const serverless = require("serverless-http");
-module.exports.handler = serverless(app);
+// Vercel function handler
+module.exports = app;
