@@ -1,5 +1,3 @@
-// /api/index.js
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -13,20 +11,19 @@ const goal_router = require("../routes/goals");
 const category_router = require("../routes/categories");
 const chat_router = require("../routes/chat");
 
-// Create an Express app
 const app = express();
 
-// Middleware setup
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.DB_URL);
-const db = mongoose.connection;
-
-db.on("open", () => {
-  console.log("Connected to MongoDB");
-});
+// MongoDB connection with error handling
+mongoose.connect(process.env.DB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+  });
 
 // Pusher setup
 const Pusher = require("pusher");
@@ -58,18 +55,21 @@ app.post("/send-message", (req, res) => {
 
   console.log("Message to send:", req.body);
 
-  // Trigger the message event to Pusher
-  pusher.trigger("chat-channel", "new-message", {
-    message,
-    roomName,
-    username,
-    createdAt,
-    uid,
-    userProfileImage,
-    name,
-  });
-
-  res.status(200).json({ success: true });
+  try {
+    pusher.trigger("chat-channel", "new-message", {
+      message,
+      roomName,
+      username,
+      createdAt,
+      uid,
+      userProfileImage,
+      name,
+    });
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error triggering Pusher:", error);
+    res.status(500).json({ success: false, message: "Error sending message" });
+  }
 });
 
 // Export the Express app wrapped in serverless-http
