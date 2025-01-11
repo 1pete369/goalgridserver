@@ -51,11 +51,12 @@ app.use("/chat", chat_router);
 
 // Send message route (trigger Pusher)
 app.post("/send-message", async (req, res) => {
-  const { message, roomName, username, createdAt, uid, userProfileImage, name } = req.body;
+  const { message, roomName, username, createdAt, uid, userProfileImage, name , id} = req.body;
 
   try {
     // Trigger the event on Pusher
     pusher.trigger("chat-room", "new-message", {
+      id,
       message,
       roomName,
       username,
