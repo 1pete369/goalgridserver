@@ -15,7 +15,10 @@ const chat_router = require("../routes/chat");
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'https://goalgrid.vercel.app' // Allow requests from your frontend origin
+}));
+
 app.use(express.json());
 
 // MongoDB connection
